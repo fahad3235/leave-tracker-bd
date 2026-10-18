@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leave Tracker BD &#8212; Offline Leave Balance &amp; Requests</title>
+<meta name="description" content="Offline bilingual (English/Bangla) leave tracker for Bangladesh: CL/SL/EL quotas, weekend-aware day counting, approval workflow, calendar, export/import.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div>
+      <h1 data-i18n="appTitle">Leave Tracker BD</h1>
+      <p class="subtitle" data-i18n="appSubtitle">Track leave balances, requests and approvals &#8212; fully offline.</p>
+    </div>
+    <div class="topbar-controls">
+      <label class="year-picker"><span data-i18n="yearLabel">Year</span>
+        <select id="yearSelect" aria-label="Year"></select>
+      </label>
+      <button id="langBtn" class="btn btn-ghost" type="button" data-i18n="langBtn">&#2476;&#2494;&#2434;&#2482;&#2494;</button>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab active" data-tab="dashboard" type="button" data-i18n="tabDashboard">Dashboard</button>
+    <button class="tab" data-tab="requests" type="button" data-i18n="tabRequests">Requests</button>
+    <button class="tab" data-tab="types" type="button" data-i18n="tabTypes">Leave Types</button>
+    <button class="tab" data-tab="calendar" type="button" data-i18n="tabCalendar">Calendar</button>
+    <button class="tab" data-tab="data" type="button" data-i18n="tabData">Data</button>
+  </nav>
+</header>
+
+<main>
+  <p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
+
+  <!-- DASHBOARD -->
+  <section id="panel-dashboard" class="panel active">
+    <h2 data-i18n="dashboardHeading">Leave balances</h2>
+    <div id="balanceCards" class="cards"></div>
+    <h3 data-i18n="totalsHeading">This year at a glance</h3>
+    <div class="totals">
+      <div><span class="totals-num" id="totalUsed">0</span><span class="totals-label" data-i18n="totalUsed">Total used</span></div>
+      <div><span class="totals-num" id="totalRemaining">0</span><span class="totals-label" data-i18n="totalRemaining">Total remaining</span></div>
+      <div><span class="totals-num" id="pendingCount">0</span><span class="totals-label" data-i18n="pendingCount">Pending requests</span></div>
+    </div>
+    <h3 data-i18n="upcomingHeading">Upcoming approved leave (next 30 days)</h3>
+    <ul id="upcomingList" class="upcoming"></ul>
+  </section>
+
+  <!-- REQUESTS -->
+  <section id="panel-requests" class="panel">
+    <h2 data-i18n="addRequest">New leave request</h2>
+    <form id="requestForm" novalidate>
+      <input type="hidden" id="reqId" value="">
+      <div class="form-grid">
+        <label><span data-i18n="typeLabel">Leave type</span>
+          <select id="reqType" required></select>
+        </label>
+        <label><span data-i18n="startLabel">Start date</span>
+          <input type="date" id="reqStart" required>
+        </label>
+        <label><span data-i18n="endLabel">End date</span>
+          <input type="date" id="reqEnd" required>
+        </label>
+        <label class="wide"><span data-i18n="reasonLabel">Reason (optional)</span>
+          <input type="text" id="reqReason" maxlength="200" data-i18n-ph="reasonPlaceholder" placeholder="e.g. Family trip to Chattogram">
+        </label>
+      </div>
+      <p class="counted"><span data-i18n="countedDays">Counted days</span>: <strong id="countedDays">&#8211;</strong></p>
+      <p id="reqError" class="error" role="alert" hidden></p>
+      <p id="reqWarning" class="warning" role="status" hidden></p>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="reqSubmit" data-i18n="submitRequest">Submit request</button>
+        <button type="button" class="btn" id="reqCancelEdit" data-i18n="cancelBtn" hidden>Cancel</button>
+      </div>
+    </form>
+
+    <h2 data-i18n="requestsHeading">All requests</h2>
+    <div class="filters">
+      <label><span data-i18n="filterStatus">Status</span>
+        <select id="statusFilter">
+          <option value="all" data-i18n="filterAll">All</option>
+          <option value="Pending" data-i18n="statusPending">Pending</option>
+          <option value="Approved" data-i18n="statusApproved">Approved</option>
+          <option value="Rejected" data-i18n="statusRejected">Rejected</option>
+          <option value="Taken" data-i18n="statusTaken">Taken</option>
+          <option value="Cancelled" data-i18n="statusCancelled">Cancelled</option>
+        </select>
+      </label>
+      <input type="search" id="searchInput" data-i18n-ph="searchPlaceholder" placeholder="Search reason&#8230;">
+    </div>
+    <div id="requestList" class="request-list"></div>
+    <p id="noRequests" class="empty" data-i18n="noRequests" hidden>No requests yet. Add your first leave request above.</p>
+  </section>
+
+  <!-- TYPES -->
+  <section id="panel-types" class="panel">
+    <h2 data-i18n="typesHeading">Leave types &amp; yearly quotas</h2>
+    <div id="typeList" class="type-list"></div>
+    <h3 data-i18n="addType">Add leave type</h3>
+    <form id="typeForm" novalidate>
+      <div class="form-grid">
+        <label><span data-i18n="typeName">Name (English)</span>
+          <input type="text" id="typeName" maxlength="40" required>
+        </label>
+        <label><span data-i18n="typeNameBn">Name (Bangla, optional)</span>
+          <input type="text" id="typeNameBn" maxlength="40">
+        </label>
+        <label><span data-i18n="typeQuota">Yearly quota (days)</span>
+          <input type="number" id="typeQuota" min="0" max="365" step="1" required>
+        </label>
+        <label><span data-i18n="typeColor">Colour</span>
+          <input type="color" id="typeColor" value="#7c3aed">
+        </label>
+      </div>
+      <p id="typeError" class="error" role="alert" hidden></p>
+      <button type="submit" class="btn btn-primary" data-i18n="saveType">Save type</button>
+    </form>
+    <h3 data-i18n="weekendHeading">Weekend days</h3>
+    <p class="note" data-i18n="weekendNote">Weekend days are skipped when counting leave days. Default: Friday only (Bangladesh government weekend). Many private offices also take Saturday.</p>
+    <div class="weekend-checks">
+      <label><input type="checkbox" id="wk5" value="5"> <span data-i18n="friday">Friday</span></label>
+      <label><input type="checkbox" id="wk6" value="6"> <span data-i18n="saturday">Saturday</span></label>
+      <label><input type="checkbox" id="wk0" value="0"> <span data-i18n="sunday">Sunday</span></label>
+    </div>
+  </section>
+
+  <!-- CALENDAR -->
+  <section id="panel-calendar" class="panel">
+    <h2 data-i18n="calendarHeading">Leave calendar</h2>
+    <p class="note" data-i18n="calendarNote">Dots show approved or taken leave. Week starts Saturday.</p>
+    <div class="cal-nav">
+      <button type="button" class="btn" id="calPrev" data-i18n="prevMonth">&#8249; Prev</button>
+      <strong id="calTitle"></strong>
+      <button type="button" class="btn" id="calNext" data-i18n="nextMonth">Next &#8250;</button>
+    </div>
+    <div id="calendarGrid" class="calendar"></div>
+  </section>
+
+  <!-- DATA -->
+  <section id="panel-data" class="panel">
+    <h2 data-i18n="dataHeading">Export, import &amp; erase</h2>
+    <div class="data-actions">
+      <button type="button" class="btn btn-primary" id="exportBtn" data-i18n="exportBtn">Export JSON</button>
+      <label class="btn" for="importFile" data-i18n="importBtn">Import JSON</label>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </div>
+    <p class="note" data-i18n="importNote">Import replaces all current data. Only files exported by this app (leave-tracker-bd, version 1) are accepted.</p>
+    <p id="importMsg" class="note" role="status" hidden></p>
+    <h3 data-i18n="eraseHeading">Erase all data</h3>
+    <p class="note" data-i18n="eraseNote">Type DELETE in the box to erase every leave type, request and setting. This cannot be undone.</p>
+    <div class="erase-row">
+      <input type="text" id="eraseInput" data-i18n-ph="erasePlaceholder" placeholder="Type DELETE" autocomplete="off">
+      <button type="button" class="btn btn-danger" id="eraseBtn" data-i18n="eraseBtn">Erase everything</button>
+    </div>
+    <p id="eraseMsg" class="error" role="alert" hidden></p>
+  </section>
+</main>
+
+<footer>
+  <p data-i18n="footerNote">Personal leave planner. Not connected to any HR system &#8212; approvals here are your own record. Quotas are the defaults many Bangladeshi offices use (CL 10, SL 14, EL 20); edit them to match your workplace.</p>
+</footer>
+
+<script src="js/logic.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
